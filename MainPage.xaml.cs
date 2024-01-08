@@ -1,6 +1,6 @@
 using System;
+using System.Diagnostics;
 using System.IO;
-using Windows.UI.ApplicationSettings;
 using Microsoft.Maui.Controls;
 using wordle;
 
@@ -8,29 +8,35 @@ namespace WORDLE
 {
     public partial class MainPage : ContentPage
     {
-        private bool gamerunning ;
+        // Define class-level variables
+        private bool gamerunning;
         private int currentColumnIndex;
         private GameLogic gameLogic;
         private string guessedWord;
         private List<BoxView> currentRowBoxViews = new List<BoxView>();
-        private int currentAttempt;
+        private int currentAttempt = 5;
+        private int currentAttemptRow;
+        private Stopwatch timer = new Stopwatch();
+        private System.Timers.Timer wordletimer;
 
+        // Constructor
         public MainPage()
         {
             InitializeComponent();
             gameLogic = new GameLogic();
             InitialiseGrid();
             NavigationPage.SetHasNavigationBar(this, false);
-  
 
-            //hiding the GameGrid and RulesLabel initially
+            // Hide various UI elements initially
             GameGrid.IsVisible = false;
             GameGrid.IsEnabled = false;
             RulesLabel.IsVisible = false;
             RulesLabel.IsEnabled = false;
-
+            TimerLabel.IsEnabled = false;
+            TimerLabel.IsVisible = false;
         }
-  
+
+        // Method to initialize the grid
         public void InitialiseGrid()
         {
             GameGrid.Children.Clear(); // Clear existing elements
@@ -57,37 +63,43 @@ namespace WORDLE
                     }
                 }
             }
+
+            currentAttempt--;
         }
 
-        private async void OnStartGameClicked(object sender, EventArgs e) {
-
+        // Event handler for the "Start Game" button click
+        private async void OnStartGameClicked(object sender, EventArgs e)
+        {
             string playerName = NameEntry.Text;
             gamerunning = true;
+            timer.Start();
 
             if (!string.IsNullOrEmpty(playerName))
             {
                 PromptForName(playerName);
 
-                // Hide the Start Game button and show the game grid
+                // Hide various UI elements and show the game grid
+                TimerLabel.IsEnabled = false;
+                TimerLabel.IsVisible = false;
                 StartGameButton.IsVisible = false;
-            RulesButton.IsVisible = false;
-            GameGrid.IsVisible = true;
-            GameGrid.IsEnabled = true;
-            RulesLabel.IsVisible = false;
-            RulesLabel.IsEnabled = false;
-            NameEntry.IsVisible = false;
+                RulesButton.IsVisible = false;
+                GameGrid.IsVisible = true;
+                GameGrid.IsEnabled = true;
+                RulesLabel.IsVisible = false;
+                RulesLabel.IsEnabled = false;
+                NameEntry.IsVisible = false;
 
-                // Show the Home button
+                // Show the Home button and keyboard layout
                 HomeButton.IsVisible = true;
-            KeyboardLayout.IsVisible = true;
-         
-        }
+                KeyboardLayout.IsVisible = true;
+            }
             else
             {
                 await DisplayAlert("Error", "Please enter a valid name.", "OK");
             }
         }
 
+        // Method to prompt for the player's name
         private async void PromptForName(string playerName)
         {
             string playerFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), playerName + ".txt");
@@ -102,13 +114,15 @@ namespace WORDLE
             else
             {
                 // If the file does not exist, create the file
-               await DisplayAlert("Welcome", "Welcome, new player!", "OK");
+                await DisplayAlert("Welcome", "Welcome, new player!", "OK");
                 File.WriteAllText(playerFile, playerName); // Creating a new file with the player's name
             }
         }
+
+        // Event handler for the "Rules" button click
         private void OnRulesClicked(object sender, EventArgs e)
         {
-            // Hide the Rules button and show the rules label
+            // Hide various UI elements and show the rules label
             StartGameButton.IsVisible = false;
             RulesButton.IsVisible = false;
             GameGrid.IsVisible = false;
@@ -120,6 +134,7 @@ namespace WORDLE
             HomeButton.IsVisible = true;
         }
 
+        // Event handler for the "Settings" button click
         private async void OnSettingsClicked(object sender, EventArgs e)
         {
             // Navigate to the SettingsPage
@@ -127,6 +142,7 @@ namespace WORDLE
             SettingsButton.IsVisible = false;
         }
 
+        // Event handler for the "Home" button click
         private async void OnHomeClicked(object sender, EventArgs e)
         {
             await Navigation.PopAsync(); // Navigate back to the previous page
@@ -142,21 +158,22 @@ namespace WORDLE
             NameEntry.IsVisible = true;
         }
 
+        // Event handler for letter buttons click
         private void OnLetterClicked(object sender, EventArgs e)
         {
             gamerunning = true;
 
             if (sender is not Button button)
                 return;
-            
-            // Handle the Back button functionality
+
+            // To handle the Back button functionality
             if (button.Text == "Back")
             {
                 if (currentColumnIndex > 0)
                 {
                     currentColumnIndex--;
-                    UpdateLabel(currentColumnIndex, "");
-                    submitWord.IsEnabled = false; // Disable submit button as the word is no longer complete
+                    UpdateLabel(currentColumnIndex, " ");
+                    submitWord.IsEnabled = false; // Disabling submit button as the word is no longer complete
                 }
                 return; // Exit the method here as no further action is required for the Back button
             }
@@ -182,8 +199,6 @@ namespace WORDLE
                 Grid.SetColumn(label, currentColumnIndex);
                 GameGrid.Children.Add(label); // Add the Label to the Children collection
 
-
-
                 // Increment the current column index
                 currentColumnIndex++;
 
@@ -195,6 +210,7 @@ namespace WORDLE
             }
         }
 
+        // Method to update letter labels
         private void UpdateLabel(int index, string text)
         {
             switch (index)
@@ -207,10 +223,9 @@ namespace WORDLE
             }
         }
 
-
+        // Event handler for the "Submit" button click
         private async void OnSubmitClicked(object sender, EventArgs e)
         {
-
             if (!gamerunning || currentColumnIndex != 5)
             {
                 // Ensure the game is running and all letters are entered
@@ -218,9 +233,9 @@ namespace WORDLE
                 return;
             }
 
-             guessedWord = string.Concat(
-               letter1.Text, letter2.Text, letter3.Text,
-               letter4.Text, letter5.Text);
+            guessedWord = string.Concat(
+                letter1.Text, letter2.Text, letter3.Text,
+                letter4.Text, letter5.Text);
 
             if (guessedWord.Length != 5)
             {
@@ -233,16 +248,25 @@ namespace WORDLE
             // Update the UI based on the check result
             UpdateUIWithCheckResult(checkResult);
 
-            // Reset for next attempt
-            ResetForNextAttempt();
-           
+            if (gameLogic.IsGameOver())
+            {
+                timer.Stop();
+                HandleGameOver();
+            }
+            else
+            {
+                // Move to the next row and reset the columns
+                currentAttemptRow++;
+                ResetForNextAttempt();
+            }
         }
 
+        // Method to update the UI with check result
         private void UpdateUIWithCheckResult(string checkResult)
         {
-           BoxView[] boxViews = { box1, box2, box3, box4, box5 };
+            BoxView[] boxViews = { box1, box2, box3, box4, box5 };
 
-            // Assuming GameGrid has BoxViews or similar for displaying results
+            // Displaying results
             for (int i = 0; i < checkResult.Length; i++)
             {
                 if (i < currentRowBoxViews.Count)
@@ -263,13 +287,14 @@ namespace WORDLE
                 }
             }
 
-            // Check if game is over
+            // Check if the game is over
             if (gameLogic.IsGameOver())
             {
                 HandleGameOver();
             }
         }
 
+        // Method to reset for the next attempt
         private void ResetForNextAttempt()
         {
             currentColumnIndex = 0;
@@ -278,7 +303,8 @@ namespace WORDLE
             InitialiseGrid();
         }
 
-            private async void HandleGameOver()
+        // Method to handle the game over condition
+        private async void HandleGameOver()
         {
             if (gameLogic.IsWordGuessedCorrectly(guessedWord))
             {
@@ -293,4 +319,3 @@ namespace WORDLE
         }
     }
 }
-
