@@ -6,9 +6,11 @@
 
     <StackLayout Padding="20">
         
+        <!-- Label for settings page and buttons for options for the user -->
+        
         <Label Text="Settings Page" />
         <Button Text="Dark Mode" Clicked="DarkModeButton_Clicked" />
-        <Button Text="Font Size" Clicked="FontSizeButton_Clicked" />
+        <Button x:Name="FontSizeButton" Text="Font Size" Clicked="FontSizeButton_Clicked" />
         <Button Text="Enable Easy Mode" Clicked="EasyModeButton_Clicked" />
         <Button Text="Time Limit" Clicked="TimeLimitButton_Clicked" />
    
