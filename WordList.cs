@@ -7,107 +7,124 @@ using System.Text.Json;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
-namespace WORDLE;
-
-public class WordList : INotifyPropertyChanged
+namespace WORDLE
 {
-    private static readonly string localFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "words.txt");
-    private static readonly string fileUrl = "https://raw.githubusercontent.com/DonH-ITS/jsonfiles/main/words.txt";
-
-    private HttpClient httpClient;
-    private List<string> words;
-    private bool isBusy;
-
-    public event PropertyChangedEventHandler PropertyChanged;
-
-    public WordList()
+    public class WordList : INotifyPropertyChanged
     {
-        httpClient = new HttpClient();
-        words = new List<string>();
-    }
+        // File paths and URL for word list
+        private static readonly string localFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "words.txt");
+        private static readonly string fileUrl = "https://raw.githubusercontent.com/DonH-ITS/jsonfiles/main/words.txt";
 
-    protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
-    {
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-    }
+        // HttpClient for downloading
+        private HttpClient httpClient;
 
-    public async Task EnsureWordListIsAvailable()
-    {
-        if (words.Count == 0 && !File.Exists(localFilePath))
+        // List to store words
+        private List<string> words;
+
+        // Flag to indicate if the list is busy
+        private bool isBusy;
+
+        // Event for property change notification
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        // Constructor
+        public WordList()
         {
-            IsBusy = true;
-            await DownloadFileAsync();
-            IsBusy = false;
+            httpClient = new HttpClient();
+            words = new List<string>();
         }
-        LoadWordsFromFile();
-    }
 
-    private async Task DownloadFileAsync()
-    {
-        try
+        // Method to raise the PropertyChanged event
+        protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
         {
-            var response = await httpClient.GetAsync(fileUrl);
-            if (response.IsSuccessStatusCode)
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        // Method to ensure the word list is available
+        public async Task EnsureWordListIsAvailable()
+        {
+            if (words.Count == 0 && !File.Exists(localFilePath))
             {
-                var fileStream = await response.Content.ReadAsStreamAsync();
-                using (var file = File.Create(localFilePath))
+                IsBusy = true;
+                await DownloadFileAsync();
+                IsBusy = false;
+            }
+            LoadWordsFromFile();
+        }
+
+        // Method to download the word list file
+        private async Task DownloadFileAsync()
+        {
+            try
+            {
+                var response = await httpClient.GetAsync(fileUrl);
+                if (response.IsSuccessStatusCode)
                 {
-                    await fileStream.CopyToAsync(file);
+                    var fileStream = await response.Content.ReadAsStreamAsync();
+                    using (var file = File.Create(localFilePath))
+                    {
+                        await fileStream.CopyToAsync(file);
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("Failed to download the file.");
                 }
             }
-            else
+            catch (Exception ex)
             {
-                Console.WriteLine("Failed to download the file.");
+                Console.WriteLine($"Exception during file download: {ex.Message}");
             }
         }
-        catch (Exception ex)
+
+        // Method to load words from the local file
+        private void LoadWordsFromFile()
         {
-            Console.WriteLine($"Exception during file download: {ex.Message}");
+            if (File.Exists(localFilePath))
+            {
+                var lines = File.ReadAllLines(localFilePath);
+                words.Clear();
+                words.AddRange(lines);
+            }
         }
-    }
 
-    private void LoadWordsFromFile()
-    {
-        if (File.Exists(localFilePath))
+        // Property to get the list of words
+        public List<string> Words
         {
-            var lines = File.ReadAllLines(localFilePath);
-            words.Clear();
-            words.AddRange(lines);
+            get => words;
+            private set
+            {
+                words = value;
+                OnPropertyChanged();
+            }
         }
-    }
 
-    public List<string> Words
-    {
-        get => words;
-        private set
+        // Property to get or set the busy state
+        public bool IsBusy
         {
-            words = value;
-            OnPropertyChanged();
+            get => isBusy;
+            set
+            {
+                if (isBusy == value)
+                    return;
+                isBusy = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(IsNotBusy));
+            }
         }
-    }
 
-    public bool IsBusy
-    {
-        get => isBusy;
-        set
+        // Property to get the opposite of IsBusy
+        public bool IsNotBusy => !IsBusy;
+
+        // Method to get a random word from the list
+        public string GetRandomWord()
         {
-            if (isBusy == value)
-                return;
-            isBusy = value;
-            OnPropertyChanged();
-            OnPropertyChanged(nameof(IsNotBusy));
+            if (Words.Count == 0)
+                return string.Empty;
+
+            Random random = new Random();
+            int index = random.Next(Words.Count);
+            return Words[index];
         }
-    }
-
-    public bool IsNotBusy => !IsBusy;
-
-    public string GetRandomWord()
-    {
-        if (Words.Count == 0)
-            return string.Empty;
-
-        Random random = new Random();
-        int index = random.Next(Words.Count);
-        return Words[index];
     }
 }
