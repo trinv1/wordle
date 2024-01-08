@@ -1,296 +1,233 @@
-using System;
-using System.IO;
-using Windows.UI.ApplicationSettings;
-using Microsoft.Maui.Controls;
-using wordle;
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="WORDLE.MainPage"
+             NavigationPage.HasNavigationBar="False"
+             BackgroundColor="Orange">
 
-namespace WORDLE
-{
-    public partial class MainPage : ContentPage
-    {
-        private bool gamerunning ;
-        private int currentColumnIndex;
-        private GameLogic gameLogic;
-        private string guessedWord;
-        private List<BoxView> currentRowBoxViews = new List<BoxView>();
-        private int currentAttempt;
+    <ScrollView>
+        <StackLayout Padding="10" VerticalOptions="StartAndExpand">
 
-        public MainPage()
-        {
-            InitializeComponent();
-            gameLogic = new GameLogic();
-            InitialiseGrid();
-            NavigationPage.SetHasNavigationBar(this, false);
-  
+            <!-- Game Title Label -->
+            <Label Text="Wordle"
+               FontSize="100"
+               FontFamily="Italic"
+               FontAttributes="Bold"
+               TextColor="Red"
+               WidthRequest="500"
+               CharacterSpacing="0.8"
+               HorizontalTextAlignment="Center" />
 
-            //hiding the GameGrid and RulesLabel initially
-            GameGrid.IsVisible = false;
-            GameGrid.IsEnabled = false;
-            RulesLabel.IsVisible = false;
-            RulesLabel.IsEnabled = false;
+            <!-- Entry for entering player's name -->
+            <Entry x:Name="NameEntry" Placeholder="Enter your name" WidthRequest="200" BackgroundColor="White"/> 
 
-        }
-  
-        public void InitialiseGrid()
-        {
-            GameGrid.Children.Clear(); // Clear existing elements
-            currentRowBoxViews.Clear(); // Clear the current row's BoxView list
+            <!-- Button to start the game -->
+            <Button x:Name="StartGameButton"
+                    Text="Start Game"
+                    BackgroundColor="Green"
+                    TextColor="White"
+                    Clicked="OnStartGameClicked"
+                     WidthRequest="120"/>
 
-            for (int i = 0; i < 6; i++) // Initialize 5x6 grid
-            {
-                for (int j = 0; j < 5; j++)
-                {
-                    BoxView box = new BoxView()
-                    {
-                        Color = Color.FromRgb(255, 255, 255),
-                        CornerRadius = 20,
-                        BackgroundColor = Color.FromRgb(255, 255, 255),
-                        Margin = new Thickness(5), // Add margin to create gaps
-                    };
-                    Grid.SetRow(box, i); // Set the row position
-                    Grid.SetColumn(box, j); // Set the column position
-                    GameGrid.Children.Add(box); // Add the BoxView to the Children collection
+            <!-- Button to view game rules -->
+            <Button x:Name="RulesButton"
+                    Text="Rules"
+                    BackgroundColor="Blue"
+                    TextColor="White"
+                    Clicked="OnRulesClicked"
+                     WidthRequest="120"/>
 
-                    if (i == currentAttempt) // Only add BoxViews of the current attempt
-                    {
-                        currentRowBoxViews.Add(box);
-                    }
-                }
-            }
-        }
+            <!-- Button to access game settings  -->
 
-        private async void OnStartGameClicked(object sender, EventArgs e) {
+            <Button x:Name="SettingsButton"
+                    Text="Settings"
+                     BackgroundColor="Grey"
+                     TextColor="White"
+                     Clicked="OnRulesClicked"
+                     WidthRequest="120"/>
 
-            string playerName = NameEntry.Text;
-            gamerunning = true;
+            <!-- Button to navigate back to the home screen -->
+            <Button x:Name="HomeButton" 
+                    Text="Home" 
+                    Clicked="OnHomeClicked" 
+                    IsVisible="False"
+                    Margin="2" WidthRequest="120"/>
 
-            if (!string.IsNullOrEmpty(playerName))
-            {
-                PromptForName(playerName);
+            <!-- Timer Label -->
+            <Label x:Name="TimerLabel" Text="Timer: 00:00" HorizontalTextAlignment="Center" FontSize="20" />
 
-                // Hide the Start Game button and show the game grid
-                StartGameButton.IsVisible = false;
-            RulesButton.IsVisible = false;
-            GameGrid.IsVisible = true;
-            GameGrid.IsEnabled = true;
-            RulesLabel.IsVisible = false;
-            RulesLabel.IsEnabled = false;
-            NameEntry.IsVisible = false;
+            <!-- Game Grid -->
+            <Grid x:Name="GameGrid" 
+                  BackgroundColor="Orange"
+                  WidthRequest="450"
+                  HeightRequest="400"
+                  IsVisible="False"
+                  IsEnabled="False"
+                   RowDefinitions="*,*,*,*,*,*" ColumnDefinitions="*,*,*,*,*">
 
-                // Show the Home button
-                HomeButton.IsVisible = true;
-            KeyboardLayout.IsVisible = true;
-         
-        }
-            else
-            {
-                await DisplayAlert("Error", "Please enter a valid name.", "OK");
-            }
-        }
+                <!-- Row 1 -->
+                <BoxView Grid.Row="0" Grid.Column="0" x:Name="box1" BackgroundColor="White"/>
+                <Label Grid.Row="0" Grid.Column="0" x:Name="letter1" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/>
 
-        private async void PromptForName(string playerName)
-        {
-            string playerFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), playerName + ".txt");
+                <BoxView Grid.Row="0" Grid.Column="1" x:Name="box2" BackgroundColor="White"/>
+                <Label Grid.Row="0" Grid.Column="1" x:Name="letter2" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/>
 
-            if (File.Exists(playerFile))
-            {
-                // If the file exists, load the file
-                string data = File.ReadAllText(playerFile);
-                await DisplayAlert("Welcome Back", "Welcome back, " + playerName, "OK");
-                // Process the data as needed
-            }
-            else
-            {
-                // If the file does not exist, create the file
-               await DisplayAlert("Welcome", "Welcome, new player!", "OK");
-                File.WriteAllText(playerFile, playerName); // Creating a new file with the player's name
-            }
-        }
-        private void OnRulesClicked(object sender, EventArgs e)
-        {
-            // Hide the Rules button and show the rules label
-            StartGameButton.IsVisible = false;
-            RulesButton.IsVisible = false;
-            GameGrid.IsVisible = false;
-            GameGrid.IsEnabled = false;
-            RulesLabel.IsVisible = true;
-            RulesLabel.IsEnabled = true;
+                <BoxView Grid.Row="0" Grid.Column="2" x:Name="box3" BackgroundColor="White"/>
+                <Label Grid.Row="0" Grid.Column="2" x:Name="letter3" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/>
 
-            // Show the Home button
-            HomeButton.IsVisible = true;
-        }
+                <BoxView Grid.Row="0" Grid.Column="3" x:Name="box4" BackgroundColor="White"/>
+                <Label Grid.Row="0" Grid.Column="3" x:Name="letter4" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/>
 
-        private async void OnSettingsClicked(object sender, EventArgs e)
-        {
-            // Navigate to the SettingsPage
-            await Navigation.PushAsync(new SettingsPage());
-            SettingsButton.IsVisible = false;
-        }
+                <BoxView Grid.Row="0" Grid.Column="4" x:Name="box5" BackgroundColor="White"/>
+                <Label Grid.Row="0" Grid.Column="4" x:Name="letter5" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/>
 
-        private async void OnHomeClicked(object sender, EventArgs e)
-        {
-            await Navigation.PopAsync(); // Navigate back to the previous page
-            gamerunning = false;
-            GameGrid.IsVisible = false;
-            GameGrid.IsEnabled = false;
-            RulesButton.IsVisible = true;
-            KeyboardLayout.IsVisible = false;
-            HomeButton.IsVisible = false;
-            StartGameButton.IsVisible = true;
-            RulesLabel.IsVisible = false;
-            RulesLabel.IsEnabled = false;
-            NameEntry.IsVisible = true;
-        }
+                <!-- Row 2 -->
+                <BoxView Grid.Row="1" Grid.Column="0" x:Name="box6" BackgroundColor="White"/>
+                <Label Grid.Row="1" Grid.Column="0" x:Name="letter6" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/>
 
-        private void OnLetterClicked(object sender, EventArgs e)
-        {
-            gamerunning = true;
+                <BoxView Grid.Row="1" Grid.Column="1" x:Name="box7" BackgroundColor="White"/>
+                <Label Grid.Row="1" Grid.Column="1" x:Name="letter7" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/>
 
-            if (sender is not Button button)
-                return;
-            
-            // Handle the Back button functionality
-            if (button.Text == "Back")
-            {
-                if (currentColumnIndex > 0)
-                {
-                    currentColumnIndex--;
-                    UpdateLabel(currentColumnIndex, "");
-                    submitWord.IsEnabled = false; // Disable submit button as the word is no longer complete
-                }
-                return; // Exit the method here as no further action is required for the Back button
-            }
+                <BoxView Grid.Row="1" Grid.Column="2" x:Name="box8" BackgroundColor="White"/>
+                <Label Grid.Row="1" Grid.Column="2" x:Name="letter8" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/>
 
-            // Handle adding a new letter
-            if (gamerunning && currentColumnIndex < 5)
-            {
-                string letter = button.Text;
-                UpdateLabel(currentColumnIndex, letter);
+                <BoxView Grid.Row="1" Grid.Column="3" x:Name="box9" BackgroundColor="White"/>
+                <Label Grid.Row="1" Grid.Column="3" x:Name="letter9" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/>
 
-                // Create a new Label with the clicked letter
-                Label label = new Label
-                {
-                    Text = letter,
-                    FontSize = 24,
-                    FontAttributes = FontAttributes.Bold,
-                    HorizontalTextAlignment = TextAlignment.Center,
-                    VerticalTextAlignment = TextAlignment.Center
-                };
+                <BoxView Grid.Row="1" Grid.Column="4" x:Name="box10" BackgroundColor="White"/>
+                <Label Grid.Row="1" Grid.Column="4" x:Name="letter10" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/>
 
-                // Add the Label to the current column and row in the grid
-                Grid.SetRow(label, 0); // Always add to the top row
-                Grid.SetColumn(label, currentColumnIndex);
-                GameGrid.Children.Add(label); // Add the Label to the Children collection
+                <!-- Row 3 -->
+                <BoxView Grid.Row="2" Grid.Column="0" x:Name="box11" BackgroundColor="White"/>
+                <Label Grid.Row="2" Grid.Column="0" x:Name="letter11" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/>
+
+                <BoxView Grid.Row="2" Grid.Column="1" x:Name="box12" BackgroundColor="White"/>
+                <Label Grid.Row="2" Grid.Column="1" x:Name="letter12" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/>
+
+                <BoxView Grid.Row="2" Grid.Column="2" x:Name="box13" BackgroundColor="White"/>
+                <Label Grid.Row="2" Grid.Column="2" x:Name="letter13" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/>
+
+                <BoxView Grid.Row="2" Grid.Column="3" x:Name="box14" BackgroundColor="White"/>
+                <Label Grid.Row="2" Grid.Column="3" x:Name="letter14" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/>
+
+                <BoxView Grid.Row="2" Grid.Column="4" x:Name="box15" BackgroundColor="White"/>
+                <Label Grid.Row="2" Grid.Column="4" x:Name="letter15" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/>
+
+                <!-- Row 4 -->
+                <BoxView Grid.Row="3" Grid.Column="0" x:Name="box16" BackgroundColor="White"/>
+                <Label Grid.Row="3" Grid.Column="0" x:Name="letter16" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/>
+
+                <BoxView Grid.Row="3" Grid.Column="1" x:Name="box17" BackgroundColor="White"/>
+                <Label Grid.Row="3" Grid.Column="1" x:Name="letter17" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/>
+
+                <BoxView Grid.Row="3" Grid.Column="2" x:Name="box18" BackgroundColor="White"/>
+                <Label Grid.Row="3" Grid.Column="2" x:Name="letter18" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/>
+
+                <BoxView Grid.Row="3" Grid.Column="3" x:Name="box19" BackgroundColor="White"/>
+                <Label Grid.Row="3" Grid.Column="3" x:Name="letter19" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/>
+
+                <BoxView Grid.Row="3" Grid.Column="4" x:Name="box20" BackgroundColor="White"/>
+                <Label Grid.Row="3" Grid.Column="4" x:Name="letter20" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/>
+
+                <!-- Row 5 -->
+                <BoxView Grid.Row="4" Grid.Column="0" x:Name="box21" BackgroundColor="White"/>
+                <Label Grid.Row="4" Grid.Column="0" x:Name="letter21" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/>
+
+                <BoxView Grid.Row="4" Grid.Column="1" x:Name="box22" BackgroundColor="White"/>
+                <Label Grid.Row="4" Grid.Column="1" x:Name="letter22" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/>
+
+                <BoxView Grid.Row="4" Grid.Column="2" x:Name="box23" BackgroundColor="White"/>
+                <Label Grid.Row="4" Grid.Column="2" x:Name="letter23" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/>
+
+                <BoxView Grid.Row="4" Grid.Column="3" x:Name="box24" BackgroundColor="White"/>
+                <Label Grid.Row="4" Grid.Column="3" x:Name="letter24" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/>
+
+                <BoxView Grid.Row="4" Grid.Column="4" x:Name="box25" BackgroundColor="White"/>
+                <Label Grid.Row="4" Grid.Column="4" x:Name="letter25" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/>
+
+                <!-- Row 6 -->
+                <BoxView Grid.Row="5" Grid.Column="0" x:Name="box26" BackgroundColor="White"/>
+                <Label Grid.Row="5" Grid.Column="0" x:Name="letter26" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/>
+
+                <BoxView Grid.Row="5" Grid.Column="1" x:Name="box27" BackgroundColor="White"/>
+                <Label Grid.Row="5" Grid.Column="1" x:Name="letter27" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/>
+
+                <BoxView Grid.Row="5" Grid.Column="2" x:Name="box28" BackgroundColor="White"/>
+                <Label Grid.Row="5" Grid.Column="2" x:Name="letter28" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/>
+
+                <BoxView Grid.Row="5" Grid.Column="3" x:Name="box29" BackgroundColor="White"/>
+                <Label Grid.Row="5" Grid.Column="3" x:Name="letter29" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/>
+
+                <BoxView Grid.Row="5" Grid.Column="4" x:Name="box30" BackgroundColor="White"/>
+                <Label Grid.Row="5" Grid.Column="4" x:Name="letter30" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/>
+
+            </Grid>
+
+            <!-- Rules Label -->
+            <Label x:Name="RulesLabel"
+                   BackgroundColor="LightGray"
+                   WidthRequest="400"
+                   HeightRequest="400"
+                   IsVisible="False"
+                   IsEnabled="False"
+                   LineHeight="1.5">
 
 
+                You have 6 tries to guess the word.
+                The colors of the letters will change to show if they are correct.
+                Green = Letter is in the correct spot
+                Grey = Letter is not in the word
+                Yellow = Letter is in the word but in the wrong spot
 
-                // Increment the current column index
-                currentColumnIndex++;
+            </Label>
 
-                // Enable the submit button if 5 letters have been entered
-                if (currentColumnIndex == 5)
-                {
-                    submitWord.IsEnabled = true;
-                }
-            }
-        }
+            <StackLayout Padding="10" VerticalOptions="CenterAndExpand">
 
-        private void UpdateLabel(int index, string text)
-        {
-            switch (index)
-            {
-                case 0: letter1.Text = text; break;
-                case 1: letter2.Text = text; break;
-                case 2: letter3.Text = text; break;
-                case 3: letter4.Text = text; break;
-                case 4: letter5.Text = text; break;
-            }
-        }
+                <!-- Letter buttons for player input -->
+                <StackLayout x:Name="KeyboardLayout" Orientation="Vertical" HorizontalOptions="CenterAndExpand" Margin="10,20" IsVisible="False">
+                    <!-- First Line -->
+                    <StackLayout Orientation="Horizontal">
+                        <Button Text="A" Clicked="OnLetterClicked" WidthRequest="50" HeightRequest="50" BackgroundColor="Black"/>
+                        <Button Text="B" Clicked="OnLetterClicked" WidthRequest="50" HeightRequest="50" BackgroundColor="Black"/>
+                        <Button Text="C" Clicked="OnLetterClicked" WidthRequest="50" HeightRequest="50" BackgroundColor="Black"/>
+                        <Button Text="D" Clicked="OnLetterClicked" WidthRequest="50" HeightRequest="50" BackgroundColor="Black"/>
+                        <Button Text="E" Clicked="OnLetterClicked" WidthRequest="50" HeightRequest="50" BackgroundColor="Black"/>
+                        <Button Text="F" Clicked="OnLetterClicked" WidthRequest="50" HeightRequest="50" BackgroundColor="Black" />
+                        <Button Text="G" Clicked="OnLetterClicked" WidthRequest="50" HeightRequest="50" BackgroundColor="Black"/>
+                        <Button Text="H" Clicked="OnLetterClicked" WidthRequest="50" HeightRequest="50" BackgroundColor="Black"/>
+                        <Button Text="I" Clicked="OnLetterClicked" WidthRequest="50" HeightRequest="50" BackgroundColor="Black"/>
+                        <Button Text="J" Clicked="OnLetterClicked" WidthRequest="50" HeightRequest="50" BackgroundColor="Black"/>
+                    </StackLayout>
+                    <!-- Third Line -->
+                    <StackLayout Orientation="Horizontal">
+                        <Button Text="K" Clicked="OnLetterClicked" WidthRequest="50" HeightRequest="50" BackgroundColor="Black"/>
+                        <Button Text="L" Clicked="OnLetterClicked" WidthRequest="50" HeightRequest="50" BackgroundColor="Black"/>
+                        <Button Text="M" Clicked="OnLetterClicked" WidthRequest="50" HeightRequest="50" BackgroundColor="Black"/>
+                        <Button Text="N" Clicked="OnLetterClicked" WidthRequest="50" HeightRequest="50" BackgroundColor="Black"/>
+                        <Button Text="O" Clicked="OnLetterClicked" WidthRequest="50" HeightRequest="50" BackgroundColor="Black"/>
+                        <Button Text="P" Clicked="OnLetterClicked" WidthRequest="50" HeightRequest="50" BackgroundColor="Black"/>
+                        <Button Text="Q" Clicked="OnLetterClicked" WidthRequest="50" HeightRequest="50" BackgroundColor="Black"/>
+                        <Button Text="R" Clicked="OnLetterClicked" WidthRequest="50" HeightRequest="50" BackgroundColor="Black"/>
+                        <Button Text="S" Clicked="OnLetterClicked" WidthRequest="50" HeightRequest="50" BackgroundColor="Black"/>
+                    </StackLayout>
+
+                   <StackLayout Orientation="Horizontal">
+                        <Button x:Name="submitWord" Text="Submit" Clicked="OnSubmitClicked" WidthRequest="80" HeightRequest="50" IsEnabled="False" BackgroundColor="Green"/>
+                        <Button Text="T" Clicked="OnLetterClicked" WidthRequest="50" HeightRequest="50" BackgroundColor="Black"/>
+                        <Button Text="U" Clicked="OnLetterClicked" WidthRequest="50" HeightRequest="50" BackgroundColor="Black"/>
+                        <Button Text="V" Clicked="OnLetterClicked" WidthRequest="50" HeightRequest="50" BackgroundColor="Black"/>
+                        <Button Text="W" Clicked="OnLetterClicked" WidthRequest="50" HeightRequest="50" BackgroundColor="Black"/>
+                        <Button Text="X" Clicked="OnLetterClicked" WidthRequest="50" HeightRequest="50" BackgroundColor="Black"/>
+                        <Button Text="Y" Clicked="OnLetterClicked" WidthRequest="50" HeightRequest="50" BackgroundColor="Black"/>
+                        <Button Text="Z" Clicked="OnLetterClicked" WidthRequest="50" HeightRequest="50" BackgroundColor="Black"/>
+                        <Button Text="Back" Clicked="OnLetterClicked" WidthRequest="60" HeightRequest="50" BackgroundColor="Black"/>
+                    </StackLayout>
+
+            </StackLayout>
+            </StackLayout>
 
 
-        private async void OnSubmitClicked(object sender, EventArgs e)
-        {
 
-            if (!gamerunning || currentColumnIndex != 5)
-            {
-                // Ensure the game is running and all letters are entered
-                await DisplayAlert("Error", "Please enter a 5-letter word.", "OK");
-                return;
-            }
-
-             guessedWord = string.Concat(
-               letter1.Text, letter2.Text, letter3.Text,
-               letter4.Text, letter5.Text);
-
-            if (guessedWord.Length != 5)
-            {
-                await DisplayAlert("Error", "Incomplete word. Please enter 5 letters.", "OK");
-                return;
-            }
-
-            string checkResult = gameLogic.CheckGuess(guessedWord);
-
-            // Update the UI based on the check result
-            UpdateUIWithCheckResult(checkResult);
-
-            // Reset for next attempt
-            ResetForNextAttempt();
-           
-        }
-
-        private void UpdateUIWithCheckResult(string checkResult)
-        {
-           BoxView[] boxViews = { box1, box2, box3, box4, box5 };
-
-            // Assuming GameGrid has BoxViews or similar for displaying results
-            for (int i = 0; i < checkResult.Length; i++)
-            {
-                if (i < currentRowBoxViews.Count)
-                {
-                    var box = boxViews[i];
-                    switch (checkResult[i])
-                    {
-                        case 'G':
-                            boxViews[i].BackgroundColor = Color.FromRgb(0, 128, 0);
-                            break;
-                        case 'Y':
-                            boxViews[i].BackgroundColor = Color.FromRgb(255, 255, 0);
-                            break;
-                        case 'X':
-                            boxViews[i].BackgroundColor = Color.FromRgb(128, 128, 128);
-                            break;
-                    }
-                }
-            }
-
-            // Check if game is over
-            if (gameLogic.IsGameOver())
-            {
-                HandleGameOver();
-            }
-        }
-
-        private void ResetForNextAttempt()
-        {
-            currentColumnIndex = 0;
-            currentRowBoxViews.Clear();
-            currentAttempt++; // Increment the attempt
-            InitialiseGrid();
-        }
-
-            private async void HandleGameOver()
-        {
-            if (gameLogic.IsWordGuessedCorrectly(guessedWord))
-            {
-                await DisplayAlert("Congratulations", "You guessed the word!", "OK");
-            }
-            else
-            {
-                await DisplayAlert("Game Over", $"The correct word was {gameLogic.TargetWord}.", "OK");
-            }
-            // Optionally, offer to restart the game
-            gameLogic.StartNewGame(); // Resets the game
-        }
-    }
-}
-
+        </StackLayout>
+    </ScrollView>
+</ContentPage>
