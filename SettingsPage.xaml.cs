@@ -12,26 +12,43 @@ public partial class SettingsPage : ContentPage
 
     private void DarkModeButton_Clicked(object sender, EventArgs e)
     {
-        // Handle Dark Mode setting here
-        Console.WriteLine("Dark Mode button clicked");
+        // Check the current background color
+        if (BackgroundColor == Color.FromRgb(255, 165, 0))
+        {
+            // Switch to Dark Mode
+            BackgroundColor = Color.FromRgb(0, 0, 0); 
+        }
+        else
+        {
+            // Switch to Light Mode
+            BackgroundColor = Color.FromRgb(255, 165, 0); 
+        }
     }
 
     private void FontSizeButton_Clicked(object sender, EventArgs e)
     {
-        // Handle Font Size setting here
-        Console.WriteLine("Font Size button clicked");
+        // Checking the current font size of the FontSizeButton
+        double currentFontSize = FontSizeButton.FontSize;
+
+        // Defining the new font size 
+        double newFontSize = currentFontSize + 2; // Increase the font size by 2 units
+
+        // Setting the new font size to the FontSizeButton
+        FontSizeButton.FontSize = newFontSize;
+
+       // Printing new font size to console
+        Console.WriteLine($"Font Size set to: {newFontSize}");
     }
 
     private void EasyModeButton_Clicked(object sender, EventArgs e)
     {
-        // Handle Easy Mode setting here
+        // Handling Easy Mode setting here
         Console.WriteLine("Easy Mode button clicked");
     }
 
     private void TimeLimitButton_Clicked(object sender, EventArgs e)
     {
-        // Handle Time Limit setting here
+        // Handleing Time Limit setting here
         Console.WriteLine("Time Limit button clicked");
     }
   }
-
